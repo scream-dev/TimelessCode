@@ -1,8 +1,15 @@
 /*
  * TimelessCode - Temporal Cipher by Scream [dev]
- * github.com/screamdev
- * Nope, don't even try
+ *           __..--''``---....___   _..._    __
+ *  /// //_.-'    .-/";  `        ``<._  ``.''_ `. / // /
+ * ///_.-' _..--.'_    \                    `( ) ) // //
+ * / (_..-' // (< _     ;_..__               ; `' / ///
+ *  / // // //  `-._,_)' // / ``--...____..-' /// / //
+ * 🐈 Module writed https://t.me/ScreamDev 
+ * 👌 My GitHub: https://github.com/ScreamDev
+ * 🧨 GitHub Project: https://github.com/scream-dev/TimelessCode
  */
+
 import java.math.BigInteger;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -18,6 +25,12 @@ public class TimelessCode {
     // I'll personally record a video of me on my knees for you if you can crack my code)
     private static String buildAlphabet() {
         Set<Integer> set = new TreeSet<>();
+        
+        // Важнейшие управляющие символы
+        set.add(0x0009); // tab
+        set.add(0x000A); // line feed
+        set.add(0x000D); // carriage return
+        
         // U+0020-U+007F
         addRange(set, 0x0020, 0x007F);
         // U+00A0-U+00FF
@@ -185,7 +198,6 @@ public class TimelessCode {
                     continue;
                 }
                 BigInteger candidate = new BigInteger(keyStr);
-                // Проверка размера ключа для операций шифрования
                 if ((choice.equals("1") || choice.equals("3")) && candidate.compareTo(BigInteger.valueOf(ALPHABET_SIZE)) < 0) {
                     System.out.println("Key is too small for encryption. Minimum is " + ALPHABET_SIZE + " (alphabet size).");
                     continue;
@@ -329,7 +341,6 @@ public class TimelessCode {
         }
         BigInteger key = new BigInteger(keyStr);
 
-        // Проверка ключа для шифрования
         if (operation.equals("encrypt") && key.compareTo(BigInteger.valueOf(ALPHABET_SIZE)) < 0) {
             System.err.println("Error: Key is too small for encryption. Minimum is " + ALPHABET_SIZE + ".");
             System.exit(1);
@@ -395,9 +406,8 @@ public class TimelessCode {
                 .withZone(ZoneOffset.UTC);
         Random rng = new Random();
         StringBuilder result = new StringBuilder();
-        // Ограничение по времени: от начала эпохи UNIX до конца 32-битного UNIX-времени
-        final long epochStart = 0L;                           // 01.01.1970 00:00:00 UTC
-        final long epochEnd   = 2147483647L;                  // 19.01.2038 03:14:07 UTC
+        final long epochStart = 0L;
+        final long epochEnd   = 2147483647L;
 
         for (int i = 0; i < message.length(); i++) {
             int cp = message.codePointAt(i);
@@ -406,9 +416,13 @@ public class TimelessCode {
             }
             int index = ALPHABET.indexOf(cp);
             if (index == -1) {
-                throw new IllegalArgumentException(
-                    "Character '" + new String(Character.toChars(cp)) + "' not in alphabet."
-                );
+                // Символ отсутствует в алфавите – выводим его Unicode номер
+                String placeholder = "[U+" + Integer.toHexString(cp).toUpperCase() + "]";
+                if (result.length() > 0) {
+                    result.append(", ");
+                }
+                result.append(placeholder);
+                continue;
             }
             int target = index;
 
@@ -456,6 +470,15 @@ public class TimelessCode {
         for (String token : tokens) {
             String trimmed = token.trim();
             if (trimmed.isEmpty()) continue;
+            
+            if (trimmed.startsWith("[U+") && trimmed.endsWith("]")) {
+                // Специальный токен: Unicode номер отсутствовавшего в алфавите символа
+                String hex = trimmed.substring(3, trimmed.length() - 1); // убираем "[U+" и "]"
+                int cp = Integer.parseInt(hex, 16);
+                result.appendCodePoint(cp);
+                continue;
+            }
+            
             LocalDateTime ldt = LocalDateTime.parse(trimmed, fmt);
             long epoch = ldt.toInstant(ZoneOffset.UTC).getEpochSecond();
             BigInteger rem = BigInteger.valueOf(epoch).mod(key);
